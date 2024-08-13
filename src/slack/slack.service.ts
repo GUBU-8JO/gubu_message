@@ -1,35 +1,19 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { WebClient } from '@slack/web-api';
-import {Cron} from "@nestjs/schedule";
+import { Injectable, Logger } from '@nestjs/common';
+import axios from 'axios';
 
 @Injectable()
 export class SlackService {
-    private slackClient: WebClient;
+  private readonly logger = new Logger(SlackService.name);
+  private readonly webhookUrl: string = process.env.SLACK_WEBHOOK_URL;
 
-    constructor(private configService: ConfigService) {
-        const slackToken = this.configService.get<string>('SLACK_TOKEN');
-        this.slackClient = new WebClient(slackToken);
+  async sendMessage(text: string): Promise<void> {
+    const payload = { text };
+
+    try {
+      await axios.post(this.webhookUrl, payload);
+      this.logger.debug('슬랙으로 메시지 전송 완료');
+    } catch (error) {
+      this.logger.error('슬랙으로 메시지 전송 중 오류 발생', error.stack);
     }
-
-    async sendMessage(channel: string, text: string): Promise<void> {
-        try {
-            await this.slackClient.chat.postMessage({
-                channel: 'noti' ,
-                text,
-            });
-        } catch (error) {
-            console.error('Error sending message to Slack:', error);
-        }
-    }
-
-
-    @Cron('*/10 * * * * *')
-    async createNotification() {
-        await this.slackClient.chat.postMessage({
-            channel: 'noti' ,
-            text:'서버상태',
-        });
-        console.log('서버상태 실행');
-    }
+  }
 }

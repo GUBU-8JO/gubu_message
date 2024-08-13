@@ -1,34 +1,18 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import {TypeOrmModule, TypeOrmModuleOptions} from '@nestjs/typeorm';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ConfigModule} from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+import { HealthController } from './health-check/health-check.controller';
 import { SlackModule } from './slack/slack.module';
-import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import { HealthCheckService } from './health-check/health-check.service';
+
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => ({
-        namingStrategy: new SnakeNamingStrategy(),
-        type: 'mysql',
-        host: configService.get<string>('DB_HOST'),
-        port: Number(configService.get<string>('DB_PORT')),
-        username: configService.get<string>('DB_USERNAME'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: configService.get<string>('DB_NAME'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get<string>('DB_SYNC') === 'true',
-        autoLoadEntities: true,
-        logging: true,
-      }),
-      inject: [ConfigService],
-    }),
+    ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     SlackModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [HealthController],
+  providers: [HealthCheckService],
 })
 export class AppModule {}
